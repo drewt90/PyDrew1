@@ -1,11 +1,23 @@
-import os
-from dotenv import load_dotenv
+﻿from fastapi import FastAPI
 
-load_dotenv()
+app = FastAPI(title="PyprCM Case Management API")
 
-def main():
-    app_name = os.getenv("APP_NAME", "My Python App")
-    print(f"Running {app_name}...")
+@app.get("/")
+def health_check():
+    return {"status": "online", "system": "PyprCM"}
 
-if __name__ == "__main__":
-    main()
+clients_db = []
+
+@app.post("/clients")
+def create_client(full_name: str, case_number: str):
+    client = {
+        "id": len(clients_db) + 1,
+        "full_name": full_name,
+        "case_number": case_number,
+    }
+    clients_db.append(client)
+    return client
+
+@app.get("/clients")
+def list_clients():
+    return clients_db
