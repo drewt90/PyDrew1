@@ -1,0 +1,701 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PyprCM — Case Management</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f3f5f8; color: #1f2937; margin: 0; padding: 24px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    h1 { margin: 0; font-size: 1.6rem; color: #111827; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .badge { padding: 6px 12px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; background: #fee2e2; color: #991b1b; }
+    .badge.online { background: #dcfce7; color: #166534; }
+    .grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
+    .card { background: #ffffff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    h2 { margin-top: 0; font-size: 1.15rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
+    .form-section-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; font-weight: 700; margin-top: 16px; border-top: 1px solid #f3f4f6; padding-top: 10px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; margin-top: 10px; margin-bottom: 4px; }
+    input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; }
+    button { margin-top: 14px; width: 100%; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    button.secondary { background: #4b5563; width: auto; margin-top: 0; padding: 7px 14px; font-size: 0.85rem; }
+    button.secondary:hover { background: #374151; }
+    button.small-btn { width: auto; margin-top: 0; padding: 5px 10px; font-size: 0.8rem; background: #f3f4f6; color: #1f2937; border: 1px solid #d1d5db; }
+    button.small-btn:hover { background: #e5e7eb; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 16px; }
+    .toolbar input { flex: 2; }
+    .toolbar select { flex: 1; }
+    .client-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .client-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .client-title { font-weight: 700; font-size: 1.08rem; }
+    .case-tag { background: #e0e7ff; color: #3730a3; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+    .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 16px; margin-top: 10px; font-size: 0.86rem; color: #374151; background: #f9fafb; padding: 10px 12px; border-radius: 6px; }
+    .details-grid div strong { color: #111827; }
+    .ssn-toggle { color: #2563eb; cursor: pointer; font-size: 0.8rem; text-decoration: underline; margin-left: 4px; }
+    .section-block { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #d1d5db; font-size: 0.88rem; }
+    .note { background: #f9fafb; padding: 8px 10px; border-left: 3px solid #2563eb; border-radius: 4px; margin-top: 6px; font-size: 0.88rem; }
+    .att-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .att-chip { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 5px 10px; border-radius: 6px; font-size: 0.84rem; text-decoration: none; font-weight: 500; }
+    .att-chip:hover { background: #dbeafe; }
+    .error { color: #b91c1c; font-size: 0.88rem; margin-top: 8px; }
+    .success { color: #166534; font-size: 0.88rem; margin-top: 8px; }
+    .auth-box { max-width: 420px; margin: 40px auto; }
+    .hidden { display: none !important; }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; overflow-y: auto; }
+    .modal { background: white; border-radius: 10px; padding: 22px; width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tab-btn { margin-top: 0; background: #e5e7eb; color: #374151; }
+    .tab-btn.active { background: #2563eb; color: white; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>PyprCM Case Management</h1>
+      <div class="header-right">
+        <span id="serverStatus" class="badge">Checking server...</span>
+        <span id="userBanner" class="hidden"></span>
+        <button id="logoutBtn" class="secondary hidden" onclick="logout()">Log Out</button>
+      </div>
+    </header>
+
+    <!-- LOGIN / REGISTER VIEW -->
+    <div id="authSection" class="auth-box card">
+      <div class="tabs">
+        <button type="button" id="loginTabBtn" class="tab-btn active" onclick="switchAuthTab('login')">Sign In</button>
+        <button type="button" id="regTabBtn" class="tab-btn" onclick="switchAuthTab('register')">Create Account</button>
+      </div>
+
+      <form id="loginForm">
+        <h2>Staff Login</h2>
+        <label>Username</label>
+        <input type="text" id="loginUser" required />
+        <label>Password</label>
+        <input type="password" id="loginPass" required />
+        <button type="submit">Log In</button>
+        <div id="loginMsg" class="error"></div>
+      </form>
+
+      <form id="registerForm" class="hidden">
+        <h2>Create Staff Account</h2>
+        <label>Full Name</label>
+        <input type="text" id="regFullName" placeholder="Drew Taylor" required />
+        <label>Username</label>
+        <input type="text" id="regUser" placeholder="drew" required />
+        <label>Password</label>
+        <input type="password" id="regPass" required />
+        <button type="submit">Register Account</button>
+        <div id="regMsg" class="error"></div>
+      </form>
+    </div>
+
+    <!-- MAIN DASHBOARD VIEW -->
+    <div id="appSection" class="grid hidden">
+      <!-- Left Column: Add Client & Add Case Note -->
+      <div>
+        <div class="card">
+          <h2>Add New Client</h2>
+          <form id="clientForm">
+            <div class="two-col">
+              <div>
+                <label>Full Name *</label>
+                <input type="text" id="fullName" placeholder="Jane Doe" required />
+              </div>
+              <div>
+                <label>Case Number *</label>
+                <input type="text" id="caseNumber" placeholder="CASE-1001" required />
+              </div>
+            </div>
+
+            <div class="two-col">
+              <div>
+                <label>Status</label>
+                <select id="status">
+                  <option value="Active">Active</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+              <div>
+                <label>SSN</label>
+                <input type="text" id="ssn" placeholder="XXX-XX-XXXX" />
+              </div>
+            </div>
+
+            <div class="form-section-title">Contact Information</div>
+            <div class="two-col">
+              <div>
+                <label>Email</label>
+                <input type="email" id="email" placeholder="jane@example.com" />
+              </div>
+              <div>
+                <label>Phone</label>
+                <input type="text" id="phone" placeholder="555-0199" />
+              </div>
+            </div>
+            <label>Address</label>
+            <input type="text" id="address" placeholder="123 Main St, City, ST 12345" />
+
+            <div class="form-section-title">Insurance & Claim Details</div>
+            <label>Insurance Provider</label>
+            <input type="text" id="insuranceProvider" placeholder="Blue Cross / State Farm" />
+            <div class="two-col">
+              <div>
+                <label>Insurance ID Number</label>
+                <input type="text" id="insuranceId" placeholder="INS-987654" />
+              </div>
+              <div>
+                <label>Claim Number</label>
+                <input type="text" id="claimNumber" placeholder="CLM-2026-001" />
+              </div>
+            </div>
+
+            <div class="form-section-title">Legal & Medical Providers</div>
+            <div class="two-col">
+              <div>
+                <label>Attorney</label>
+                <input type="text" id="attorney" placeholder="John Smith, Esq." />
+              </div>
+              <div>
+                <label>Law Firm</label>
+                <input type="text" id="lawFirm" placeholder="Smith & Associates" />
+              </div>
+            </div>
+            <label>Providers</label>
+            <textarea id="providers" rows="2" placeholder="List treating doctors, clinics, or facilities..."></textarea>
+
+            <button type="submit">Save Client</button>
+            <div id="clientError" class="error"></div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>Add Case Note</h2>
+          <form id="noteForm">
+            <label>Select Client *</label>
+            <select id="noteClientId" required></select>
+
+            <label>Note Title *</label>
+            <input type="text" id="noteTitle" placeholder="Initial Intake" required />
+
+            <label>Note Details *</label>
+            <textarea id="noteContent" rows="3" placeholder="Enter case update..." required></textarea>
+
+            <button type="submit">Add Note</button>
+            <div id="noteError" class="error"></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right Column: Search, Filter, Clients, Attachments -->
+      <div class="card">
+        <h2>Clients & Case Files</h2>
+        <div class="toolbar">
+          <input type="text" id="searchInput" placeholder="Search name, case #, claim #, insurance, attorney, law firm..." oninput="loadClients()" />
+          <select id="statusFilter" onchange="loadClients()">
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Pending">Pending</option>
+            <option value="Closed">Closed</option>
+          </select>
+        </div>
+        <div id="clientList">Loading clients...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT CLIENT MODAL -->
+  <div id="editModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <h2>Edit Client</h2>
+      <form id="editClientForm">
+        <input type="hidden" id="editClientId" />
+        <div class="two-col">
+          <div>
+            <label>Full Name *</label>
+            <input type="text" id="editFullName" required />
+          </div>
+          <div>
+            <label>Case Number *</label>
+            <input type="text" id="editCaseNumber" required />
+          </div>
+        </div>
+        <div class="two-col">
+          <div>
+            <label>Status</label>
+            <select id="editStatus">
+              <option value="Active">Active</option>
+              <option value="Pending">Pending</option>
+              <option value="Closed">Closed</option>
+            </select>
+          </div>
+          <div>
+            <label>SSN</label>
+            <input type="text" id="editSsn" />
+          </div>
+        </div>
+
+        <div class="form-section-title">Contact Information</div>
+        <div class="two-col">
+          <div>
+            <label>Email</label>
+            <input type="email" id="editEmail" />
+          </div>
+          <div>
+            <label>Phone</label>
+            <input type="text" id="editPhone" />
+          </div>
+        </div>
+        <label>Address</label>
+        <input type="text" id="editAddress" />
+
+        <div class="form-section-title">Insurance & Claim Details</div>
+        <label>Insurance Provider</label>
+        <input type="text" id="editInsuranceProvider" />
+        <div class="two-col">
+          <div>
+            <label>Insurance ID Number</label>
+            <input type="text" id="editInsuranceId" />
+          </div>
+          <div>
+            <label>Claim Number</label>
+            <input type="text" id="editClaimNumber" />
+          </div>
+        </div>
+
+        <div class="form-section-title">Legal & Medical Providers</div>
+        <div class="two-col">
+          <div>
+            <label>Attorney</label>
+            <input type="text" id="editAttorney" />
+          </div>
+          <div>
+            <label>Law Firm</label>
+            <input type="text" id="editLawFirm" />
+          </div>
+        </div>
+        <label>Providers</label>
+        <textarea id="editProviders" rows="2"></textarea>
+
+        <div id="editError" class="error"></div>
+        <div class="modal-actions">
+          <button type="submit">Save Changes</button>
+          <button type="button" class="secondary" onclick="closeModal('editModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD ATTACHMENT MODAL -->
+  <div id="attachModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <h2>Add Attachment</h2>
+      <input type="hidden" id="attachClientId" />
+      <div class="tabs">
+        <button type="button" id="fileTabBtn" class="tab-btn active" onclick="switchAttachTab('file')">Upload File (PDF, Photo, Email)</button>
+        <button type="button" id="linkTabBtn" class="tab-btn" onclick="switchAttachTab('link')">Add Web Link</button>
+      </div>
+
+      <form id="uploadFileForm">
+        <label>Attachment Label *</label>
+        <input type="text" id="fileLabel" placeholder="e.g., Intake PDF, ID Photo, Client Email" required />
+        <label>Choose File (PDF, JPG, PNG, EML, MSG, DOCX) *</label>
+        <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.gif,.eml,.msg,.doc,.docx,.txt" required />
+        <div id="fileError" class="error"></div>
+        <div class="modal-actions">
+          <button type="submit">Upload File</button>
+          <button type="button" class="secondary" onclick="closeModal('attachModal')">Cancel</button>
+        </div>
+      </form>
+
+      <form id="addLinkForm" class="hidden">
+        <label>Link Label *</label>
+        <input type="text" id="linkLabel" placeholder="e.g., Court Docket / Cloud Folder" required />
+        <label>URL (https://...) *</label>
+        <input type="url" id="linkUrl" placeholder="https://example.com" required />
+        <div id="linkError" class="error"></div>
+        <div class="modal-actions">
+          <button type="submit">Save Link</button>
+          <button type="button" class="secondary" onclick="closeModal('attachModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+    let authToken = localStorage.getItem("pyprcm_token") || "";
+    let currentUser = localStorage.getItem("pyprcm_user") || "";
+    let cachedClients = [];
+
+    function authHeaders(extra = {}) {
+      return { ...extra, "Authorization": `Bearer ${authToken}` };
+    }
+
+    function maskSSN(ssn) {
+      if (!ssn) return "—";
+      const clean = ssn.replace(/\D/g, "");
+      return clean.length >= 4 ? `***-**-${clean.slice(-4)}` : "***-**-****";
+    }
+
+    function toggleSSN(el, fullSsn) {
+      const span = el.previousElementSibling;
+      if (el.textContent === "Show") {
+        span.textContent = fullSsn;
+        el.textContent = "Hide";
+      } else {
+        span.textContent = maskSSN(fullSsn);
+        el.textContent = "Show";
+      }
+    }
+
+    async function checkHealth() {
+      const badge = document.getElementById("serverStatus");
+      try {
+        const res = await fetch(`${API}/`);
+        if (res.ok) {
+          badge.textContent = "Backend Online (SQLite)";
+          badge.classList.add("online");
+        }
+      } catch {
+        badge.textContent = "Backend Offline";
+      }
+    }
+
+    function updateAuthUI() {
+      const loggedIn = Boolean(authToken);
+      document.getElementById("authSection").classList.toggle("hidden", loggedIn);
+      document.getElementById("appSection").classList.toggle("hidden", !loggedIn);
+      document.getElementById("logoutBtn").classList.toggle("hidden", !loggedIn);
+      const banner = document.getElementById("userBanner");
+      banner.classList.toggle("hidden", !loggedIn);
+      if (loggedIn) {
+        banner.textContent = `Signed in as ${currentUser}`;
+        loadClients();
+      }
+    }
+
+    function switchAuthTab(tab) {
+      document.getElementById("loginForm").classList.toggle("hidden", tab !== "login");
+      document.getElementById("registerForm").classList.toggle("hidden", tab !== "register");
+      document.getElementById("loginTabBtn").classList.toggle("active", tab === "login");
+      document.getElementById("regTabBtn").classList.toggle("active", tab === "register");
+    }
+
+    function switchAttachTab(tab) {
+      document.getElementById("uploadFileForm").classList.toggle("hidden", tab !== "file");
+      document.getElementById("addLinkForm").classList.toggle("hidden", tab !== "link");
+      document.getElementById("fileTabBtn").classList.toggle("active", tab === "file");
+      document.getElementById("linkTabBtn").classList.toggle("active", tab === "link");
+    }
+
+    function logout() {
+      authToken = "";
+      currentUser = "";
+      localStorage.removeItem("pyprcm_token");
+      localStorage.removeItem("pyprcm_user");
+      updateAuthUI();
+    }
+
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("regMsg");
+      msg.className = "error";
+      msg.textContent = "";
+      const res = await fetch(`${API}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: document.getElementById("regFullName").value.trim(),
+          username: document.getElementById("regUser").value.trim(),
+          password: document.getElementById("regPass").value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        msg.textContent = data.detail || "Registration failed.";
+        return;
+      }
+      e.target.reset();
+      switchAuthTab("login");
+      const loginMsg = document.getElementById("loginMsg");
+      loginMsg.className = "success";
+      loginMsg.textContent = "Account created! Sign in below.";
+    });
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("loginMsg");
+      msg.className = "error";
+      msg.textContent = "";
+      const res = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: document.getElementById("loginUser").value.trim(),
+          password: document.getElementById("loginPass").value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        msg.textContent = data.detail || "Login failed.";
+        return;
+      }
+      authToken = data.token;
+      currentUser = data.full_name;
+      localStorage.setItem("pyprcm_token", authToken);
+      localStorage.setItem("pyprcm_user", currentUser);
+      e.target.reset();
+      updateAuthUI();
+    });
+
+    async function loadClients() {
+      const listEl = document.getElementById("clientList");
+      const selectEl = document.getElementById("noteClientId");
+      const search = document.getElementById("searchInput").value.trim();
+      const status = document.getElementById("statusFilter").value;
+
+      const params = new URLSearchParams();
+      if (search) params.append("search", search);
+      if (status && status !== "All") params.append("status", status);
+
+      const res = await fetch(`${API}/clients?${params.toString()}`, { headers: authHeaders() });
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+      cachedClients = await res.json();
+
+      selectEl.innerHTML = cachedClients.length
+        ? cachedClients.map(c => `<option value="${c.id}">${c.full_name} (${c.case_number})</option>`).join("")
+        : `<option value="">-- Add a client first --</option>`;
+
+      if (!cachedClients.length) {
+        listEl.innerHTML = "<p>No matching clients found.</p>";
+        return;
+      }
+
+      listEl.innerHTML = cachedClients.map(c => `
+        <div class="client-item">
+          <div class="client-header">
+            <div>
+              <span class="client-title">${c.full_name}</span>
+              <span class="case-tag">${c.case_number} • ${c.status}</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="small-btn" onclick="openEditModal(${c.id})">Edit</button>
+              <button type="button" class="small-btn" onclick="openAttachModal(${c.id})">+ Attachment</button>
+            </div>
+          </div>
+
+          <div class="details-grid">
+            <div><strong>Email:</strong> ${c.email || "—"}</div>
+            <div><strong>Phone:</strong> ${c.phone || "—"}</div>
+            <div><strong>Address:</strong> ${c.address || "—"}</div>
+            <div>
+              <strong>SSN:</strong> <span>${maskSSN(c.ssn)}</span>
+              ${c.ssn ? `<span class="ssn-toggle" onclick="toggleSSN(this, '${c.ssn.replace(/'/g, "")}')">Show</span>` : ""}
+            </div>
+            <div><strong>Insurance Provider:</strong> ${c.insurance_provider || "—"}</div>
+            <div><strong>Insurance ID #:</strong> ${c.insurance_id || "—"}</div>
+            <div><strong>Claim #:</strong> ${c.claim_number || "—"}</div>
+            <div><strong>Attorney:</strong> ${c.attorney || "—"}</div>
+            <div><strong>Law Firm:</strong> ${c.law_firm || "—"}</div>
+            <div style="grid-column: 1 / -1;"><strong>Providers:</strong> ${c.providers || "—"}</div>
+          </div>
+
+          <div class="section-block">
+            <strong>Attachments (${c.attachments.length}):</strong>
+            <div class="att-list">
+              ${c.attachments.length
+                ? c.attachments.map(a => {
+                    const href = a.item_type === "file" ? `${API}${a.url_or_path}` : a.url_or_path;
+                    const icon = a.item_type === "file" ? "📄" : "🔗";
+                    return `<a class="att-chip" href="${href}" target="_blank" rel="noopener">${icon} ${a.label}</a>`;
+                  }).join("")
+                : `<span style="color:#6b7280;">None yet.</span>`}
+            </div>
+          </div>
+
+          <div class="section-block">
+            <strong>Case Notes (${c.notes.length}):</strong>
+            ${c.notes.length
+              ? c.notes.map(n => `<div class="note"><strong>${n.title}:</strong> ${n.content}</div>`).join("")
+              : `<div style="color:#6b7280; margin-top:4px;">No notes yet.</div>`}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("clientForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById("clientError");
+      errEl.textContent = "";
+      const res = await fetch(`${API}/clients`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          full_name: document.getElementById("fullName").value.trim(),
+          case_number: document.getElementById("caseNumber").value.trim(),
+          status: document.getElementById("status").value,
+          ssn: document.getElementById("ssn").value.trim() || null,
+          email: document.getElementById("email").value.trim() || null,
+          phone: document.getElementById("phone").value.trim() || null,
+          address: document.getElementById("address").value.trim() || null,
+          insurance_provider: document.getElementById("insuranceProvider").value.trim() || null,
+          insurance_id: document.getElementById("insuranceId").value.trim() || null,
+          claim_number: document.getElementById("claimNumber").value.trim() || null,
+          attorney: document.getElementById("attorney").value.trim() || null,
+          law_firm: document.getElementById("lawFirm").value.trim() || null,
+          providers: document.getElementById("providers").value.trim() || null
+        })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        errEl.textContent = data.detail || "Failed to save client.";
+        return;
+      }
+      e.target.reset();
+      loadClients();
+    });
+
+    document.getElementById("noteForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById("noteError");
+      errEl.textContent = "";
+      const clientId = document.getElementById("noteClientId").value;
+      const res = await fetch(`${API}/clients/${clientId}/notes`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          title: document.getElementById("noteTitle").value.trim(),
+          content: document.getElementById("noteContent").value.trim()
+        })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        errEl.textContent = data.detail || "Failed to save note.";
+        return;
+      }
+      e.target.reset();
+      loadClients();
+    });
+
+    function openEditModal(clientId) {
+      const client = cachedClients.find(c => c.id === clientId);
+      if (!client) return;
+      document.getElementById("editClientId").value = client.id;
+      document.getElementById("editFullName").value = client.full_name;
+      document.getElementById("editCaseNumber").value = client.case_number;
+      document.getElementById("editStatus").value = client.status;
+      document.getElementById("editSsn").value = client.ssn || "";
+      document.getElementById("editEmail").value = client.email || "";
+      document.getElementById("editPhone").value = client.phone || "";
+      document.getElementById("editAddress").value = client.address || "";
+      document.getElementById("editInsuranceProvider").value = client.insurance_provider || "";
+      document.getElementById("editInsuranceId").value = client.insurance_id || "";
+      document.getElementById("editClaimNumber").value = client.claim_number || "";
+      document.getElementById("editAttorney").value = client.attorney || "";
+      document.getElementById("editLawFirm").value = client.law_firm || "";
+      document.getElementById("editProviders").value = client.providers || "";
+      document.getElementById("editError").textContent = "";
+      document.getElementById("editModal").classList.remove("hidden");
+    }
+
+    document.getElementById("editClientForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const clientId = document.getElementById("editClientId").value;
+      const res = await fetch(`${API}/clients/${clientId}`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          full_name: document.getElementById("editFullName").value.trim(),
+          case_number: document.getElementById("editCaseNumber").value.trim(),
+          status: document.getElementById("editStatus").value,
+          ssn: document.getElementById("editSsn").value.trim() || null,
+          email: document.getElementById("editEmail").value.trim() || null,
+          phone: document.getElementById("editPhone").value.trim() || null,
+          address: document.getElementById("editAddress").value.trim() || null,
+          insurance_provider: document.getElementById("editInsuranceProvider").value.trim() || null,
+          insurance_id: document.getElementById("editInsuranceId").value.trim() || null,
+          claim_number: document.getElementById("editClaimNumber").value.trim() || null,
+          attorney: document.getElementById("editAttorney").value.trim() || null,
+          law_firm: document.getElementById("editLawFirm").value.trim() || null,
+          providers: document.getElementById("editProviders").value.trim() || null
+        })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        document.getElementById("editError").textContent = data.detail || "Update failed.";
+        return;
+      }
+      closeModal("editModal");
+      loadClients();
+    });
+
+    function openAttachModal(clientId) {
+      document.getElementById("attachClientId").value = clientId;
+      document.getElementById("uploadFileForm").reset();
+      document.getElementById("addLinkForm").reset();
+      document.getElementById("fileError").textContent = "";
+      document.getElementById("linkError").textContent = "";
+      switchAttachTab("file");
+      document.getElementById("attachModal").classList.remove("hidden");
+    }
+
+    document.getElementById("uploadFileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const clientId = document.getElementById("attachClientId").value;
+      const formData = new FormData();
+      formData.append("label", document.getElementById("fileLabel").value.trim());
+      formData.append("file", document.getElementById("fileInput").files[0]);
+
+      const res = await fetch(`${API}/clients/${clientId}/upload`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: formData
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        document.getElementById("fileError").textContent = data.detail || "Upload failed.";
+        return;
+      }
+      closeModal("attachModal");
+      loadClients();
+    });
+
+    document.getElementById("addLinkForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const clientId = document.getElementById("attachClientId").value;
+      const res = await fetch(`${API}/clients/${clientId}/links`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          label: document.getElementById("linkLabel").value.trim(),
+          url: document.getElementById("linkUrl").value.trim()
+        })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        document.getElementById("linkError").textContent = data.detail || "Failed to save link.";
+        return;
+      }
+      closeModal("attachModal");
+      loadClients();
+    });
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add("hidden");
+    }
+
+    checkHealth();
+    updateAuthUI();
+  </script>
+</body>
+</html>
